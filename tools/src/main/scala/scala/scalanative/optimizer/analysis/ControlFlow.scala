@@ -52,29 +52,6 @@ object ControlFlow {
 
       result
     }
-
-    lazy val eh: Map[Local, Option[Local]] = {
-      val handlers               = mutable.Map.empty[Local, Option[Local]]
-      var current: Option[Local] = None
-
-      foreach { block =>
-        handlers.get(block.name).foreach { handler =>
-          current = handler
-        }
-
-        block.insts.last match {
-          case Inst.Try(succ, fail: Next.Fail) =>
-            handlers(succ.name) = Some(fail.name)
-            handlers(fail.name) = current
-          case _ =>
-            ()
-        }
-
-        handlers(block.name) = current
-      }
-
-      handlers.toMap
-    }
   }
 
   object Graph {
@@ -107,7 +84,7 @@ object ControlFlow {
       blocks.foreach {
         case node @ Block(n, _, _ :+ cf) =>
           cf match {
-            case Inst.Unreachable | _: Inst.Ret | _: Inst.Throw =>
+            case Inst.Unreachable | _: Inst.Ret =>
               ()
             case Inst.Jump(next) =>
               edge(node, nodes(next.name), next)
@@ -119,12 +96,6 @@ object ControlFlow {
               cases.foreach { case_ =>
                 edge(node, nodes(case_.name), case_)
               }
-            case Inst.Invoke(_, _, _, succ, fail) =>
-              edge(node, nodes(succ.name), succ)
-              edge(node, nodes(fail.name), fail)
-            case Inst.Try(next1, next2) =>
-              edge(node, nodes(next1.name), next1)
-              edge(node, nodes(next2.name), next2)
             case inst =>
               unsupported(inst)
           }

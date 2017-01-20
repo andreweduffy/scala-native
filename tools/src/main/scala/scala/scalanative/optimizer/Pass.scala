@@ -94,17 +94,6 @@ trait Pass {
           Inst.If(txVal(v), txNext(thenp), txNext(elsep))
         case Inst.Switch(v, default, cases) =>
           Inst.Switch(txVal(v), txNext(default), cases.map(txNext))
-        case Inst.Invoke(ty, ptrv, argvs, succ, fail) =>
-          Inst.Invoke(txType(ty),
-                      txVal(ptrv),
-                      argvs.map(txVal),
-                      txNext(succ),
-                      txNext(fail))
-
-        case Inst.Throw(v) =>
-          Inst.Throw(txVal(v))
-        case Inst.Try(norm, exc) =>
-          Inst.Try(txNext(norm), txNext(exc))
       }
 
       hook(postInst, post, Seq(post))
@@ -112,8 +101,8 @@ trait Pass {
   }
 
   private def txOp(op: Op): Op = op match {
-    case Op.Call(ty, ptrv, argvs) =>
-      Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
+    case Op.Call(ty, ptrv, argvs, unwind) =>
+      Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(unwind))
     case Op.Load(ty, ptrv) =>
       Op.Load(txType(ty), txVal(ptrv))
     case Op.Store(ty, ptrv, v) =>
@@ -135,14 +124,16 @@ trait Pass {
     case Op.Select(v1, v2, v3) =>
       Op.Select(txVal(v1), txVal(v2), txVal(v3))
 
+    case Op.Throw(v, unwind) =>
+      Op.Throw(txVal(v), txNext(unwind))
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
     case Op.Field(v, n) =>
       Op.Field(txVal(v), n)
     case Op.Method(v, n) =>
       Op.Method(txVal(v), n)
-    case Op.Module(n) =>
-      Op.Module(n)
+    case Op.Module(n, unwind) =>
+      Op.Module(n, txNext(unwind))
     case Op.As(ty, v) =>
       Op.As(txType(ty), txVal(v))
     case Op.Is(ty, v) =>
@@ -191,6 +182,7 @@ trait Pass {
   private def txNext(next: Next): Next = {
     val pre = hook(preNext, next, next)
     val post = pre match {
+      case Next.None           => Next.None
       case succ: Next.Succ     => succ
       case fail: Next.Fail     => fail
       case Next.Label(n, args) => Next.Label(n, args.map(txVal))

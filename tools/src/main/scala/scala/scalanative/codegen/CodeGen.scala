@@ -325,30 +325,6 @@ object CodeGen {
         case Inst.Switch(scrut, default, cases) =>
           buf += sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
 
-        case Inst.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
-          val Type.Function(_, resty) = ty
-
-          val name = cfg.find(succ.name).params.headOption.map(_.name)
-          val bind = name.fold(sh"") { name =>
-            sh"%$name.succ = "
-          }
-
-          buf +=
-            sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
-
-        case Inst.Invoke(ty, ptr, args, succ, fail) =>
-          val Type.Function(_, resty) = ty
-
-          val name = cfg.find(succ.name).params.headOption.map(_.name)
-          val bind = name.fold(sh"") { name =>
-            sh"%$name.succ = "
-          }
-          val pointee = fresh()
-
-          buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf +=
-            sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
-
         case Inst.None =>
           ()
 
@@ -384,7 +360,7 @@ object CodeGen {
       val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
       op match {
-        case Op.Call(ty, Val.Global(pointee, _), args) =>
+        case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
           val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
           val Type.Function(argtys, _) = ty
@@ -394,7 +370,7 @@ object CodeGen {
           buf ++= preinsts
           buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
 
-        case Op.Call(ty, ptr, args) =>
+        case Op.Call(ty, ptr, args, Next.None) =>
           val pointee = fresh()
           val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
 
@@ -405,6 +381,30 @@ object CodeGen {
           buf ++= preinsts
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
+
+//        case Inst.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
+//          val Type.Function(_, resty) = ty
+//
+//          val name = cfg.find(succ.name).params.headOption.map(_.name)
+//          val bind = name.fold(sh"") { name =>
+//            sh"%$name.succ = "
+//          }
+//
+//          buf +=
+//            sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+//
+//        case Inst.Invoke(ty, ptr, args, succ, fail) =>
+//          val Type.Function(_, resty) = ty
+//
+//          val name = cfg.find(succ.name).params.headOption.map(_.name)
+//          val bind = name.fold(sh"") { name =>
+//            sh"%$name.succ = "
+//          }
+//          val pointee = fresh()
+//
+//          buf += sh"%$pointee = bitcast $ptr to $ty*"
+//          buf +=
+//            sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()
@@ -441,7 +441,7 @@ object CodeGen {
     }
 
     implicit val showOp: Show[Op] = Show {
-      case Op.Call(_, _, _) =>
+      case Op.Call(_, _, _, _) =>
         unreachable
       case Op.Load(_, _) =>
         unreachable

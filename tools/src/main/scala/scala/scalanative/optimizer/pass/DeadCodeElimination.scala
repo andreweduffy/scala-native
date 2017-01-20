@@ -15,6 +15,8 @@ class DeadCodeElimination(implicit top: Top) extends Pass {
 
   override def preDefn = {
     case defn: Defn.Define =>
+      println("DCE " + defn.name)
+
       val insts      = defn.insts
       val cfg        = ControlFlow.Graph(insts)
       val usedef     = UseDef(cfg)

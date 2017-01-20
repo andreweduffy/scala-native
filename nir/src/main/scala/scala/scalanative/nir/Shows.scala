@@ -85,18 +85,15 @@ object Shows {
     case Inst.Switch(scrut, default, cases) =>
       val body = brace(r(cases.map(i(_)) :+ i(sh"default => $default")))
       sh"switch $scrut $body"
-    case Inst.Invoke(ty, f, args, succ, fail) =>
-      sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
 
-    case Inst.Throw(value) =>
-      sh"throw $value"
-    case Inst.Try(normal, exc) =>
-      sh"try $normal catch $exc"
+
   }
 
   implicit val showOp: Show[Op] = Show {
-    case Op.Call(ty, f, args) =>
+    case Op.Call(ty, f, args, Next.None) =>
       sh"call[$ty] $f(${r(args, sep = ", ")})"
+    case Op.Call(ty, f, args, unwind) =>
+      sh"call[$ty] $f(${r(args, sep = ", ")}) unwind $unwind"
     case Op.Load(ty, ptr) =>
       sh"load[$ty] $ptr"
     case Op.Store(ty, ptr, value) =>
@@ -120,14 +117,20 @@ object Shows {
     case Op.Select(cond, thenv, elsev) =>
       sh"select $cond, $thenv, $elsev"
 
+    case Op.Throw(value, Next.None) =>
+      sh"throw $value"
+    case Op.Throw(value, unwind) =>
+      sh"throw $value unwind $unwind"
     case Op.Classalloc(name) =>
       sh"classalloc $name"
     case Op.Field(value, name) =>
       sh"field $value, $name"
     case Op.Method(value, name) =>
       sh"method $value, $name"
-    case Op.Module(name) =>
+    case Op.Module(name, Next.None) =>
       sh"module $name"
+    case Op.Module(name, unwind) =>
+      sh"module $name unwind $unwind"
     case Op.As(ty, value) =>
       sh"as[$ty] $value"
     case Op.Is(ty, value) =>

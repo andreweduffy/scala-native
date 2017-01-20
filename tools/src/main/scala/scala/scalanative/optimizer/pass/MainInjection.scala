@@ -28,6 +28,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
       val rt     = Val.Local(fresh(), Rt)
       val arr    = Val.Local(fresh(), ObjectArray)
       val exc    = Val.Local(fresh(), nir.Rt.Object)
+      val unwind = Next.Fail(fail)
 
       defns :+ Defn.Define(
         Attrs.None,
@@ -35,16 +36,14 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
         MainSig,
         Seq(
           Inst.Label(start, Seq(argc, argv)),
-          Inst.Try(Next.Succ(succ), Next.Fail(fail)),
-          Inst.Label(succ, Seq()),
-          Inst.Let(Op.Call(InitSig, Init, Seq())),
-          Inst.Let(rt.name, Op.Module(Rt.name)),
-          Inst.Let(arr.name, Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv))),
-          Inst.Let(module.name, Op.Module(entry.top)),
-          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr))),
+          Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
+          Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
+          Inst.Let(arr.name, Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
+          Inst.Let(module.name, Op.Module(entry.top, unwind)),
+          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
           Inst.Ret(Val.I32(0)),
           Inst.Label(fail, Seq(exc)),
-          Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc))),
+          Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc), Next.None)),
           Inst.Ret(Val.I32(1))
         )
       )

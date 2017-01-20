@@ -5,6 +5,10 @@ sealed abstract class Next {
   def name: Local
 }
 object Next {
+  final case object None                              extends Next {
+    def name: Local =
+      throw new UnsupportedOperationException
+  }
   final case class Succ(name: Local)                  extends Next
   final case class Fail(name: Local)                  extends Next
   final case class Case(value: Val, name: Local)      extends Next
