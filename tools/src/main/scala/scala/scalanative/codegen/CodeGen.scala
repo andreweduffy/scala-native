@@ -361,20 +361,30 @@ object CodeGen {
 
       op match {
         case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
-          val bind = if (isVoid(op.resty)) s() else sh"%$name = "
-
           val Type.Function(argtys, _) = ty
+
+          val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
           val (preinsts, argshows) = showCallArgs(argtys, args)
 
           buf ++= preinsts
           buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
 
+        case Op.Call(ty, Val.Global(pointee, _), args, unwind) =>
+          val Type.Function(_, resty) = ty
+
+          val succ = fresh()
+          val bind = if (isVoid(op.resty)) s() else sh"%$name = "
+
+          buf +=
+            sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to label %$succ unwind $unwind"
+          buf += sh"$succ:"
+
         case Op.Call(ty, ptr, args, Next.None) =>
+          val Type.Function(argtys, _) = ty
+
           val pointee = fresh()
           val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
-
-          val Type.Function(argtys, _) = ty
 
           val (preinsts, argshows) = showCallArgs(argtys, args)
 
@@ -382,29 +392,17 @@ object CodeGen {
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
 
-//        case Inst.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
-//          val Type.Function(_, resty) = ty
-//
-//          val name = cfg.find(succ.name).params.headOption.map(_.name)
-//          val bind = name.fold(sh"") { name =>
-//            sh"%$name.succ = "
-//          }
-//
-//          buf +=
-//            sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
-//
-//        case Inst.Invoke(ty, ptr, args, succ, fail) =>
-//          val Type.Function(_, resty) = ty
-//
-//          val name = cfg.find(succ.name).params.headOption.map(_.name)
-//          val bind = name.fold(sh"") { name =>
-//            sh"%$name.succ = "
-//          }
-//          val pointee = fresh()
-//
-//          buf += sh"%$pointee = bitcast $ptr to $ty*"
-//          buf +=
-//            sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+        case Op.Call(ty, ptr, args, unwind) =>
+          val Type.Function(_, resty) = ty
+
+          val pointee = fresh()
+          val succ    = fresh()
+          val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
+
+          buf += sh"%$pointee = bitcast $ptr to $ty*"
+          buf +=
+            sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to label %$succ unwind $unwind"
+          buf += sh"$succ:"
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()
