@@ -86,7 +86,6 @@ object Shows {
       val body = brace(r(cases.map(i(_)) :+ i(sh"default => $default")))
       sh"switch $scrut $body"
 
-
   }
 
   implicit val showOp: Show[Op] = Show {

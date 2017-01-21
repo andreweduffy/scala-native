@@ -5,7 +5,7 @@ sealed abstract class Next {
   def name: Local
 }
 object Next {
-  final case object None                              extends Next {
+  final case object None extends Next {
     def name: Local =
       throw new UnsupportedOperationException
   }

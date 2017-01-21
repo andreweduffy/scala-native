@@ -7,22 +7,22 @@ sealed abstract class Op {
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _, _) => ret
     case Op.Call(_, _, _, _)                     => unreachable
-    case Op.Load(ty, _)                       => ty
-    case Op.Store(_, _, _)                    => Type.Unit
-    case Op.Elem(_, _, _)                     => Type.Ptr
-    case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes.map(Val.I32(_)))
-    case Op.Insert(aggr, _, _)                => aggr.ty
-    case Op.Stackalloc(ty, _)                 => Type.Ptr
-    case Op.Bin(_, ty, _, _)                  => ty
-    case Op.Comp(_, _, _, _)                  => Type.Bool
-    case Op.Conv(_, ty, _)                    => ty
-    case Op.Select(_, v, _)                   => v.ty
+    case Op.Load(ty, _)                          => ty
+    case Op.Store(_, _, _)                       => Type.Unit
+    case Op.Elem(_, _, _)                        => Type.Ptr
+    case Op.Extract(aggr, indexes)               => aggr.ty.elemty(indexes.map(Val.I32(_)))
+    case Op.Insert(aggr, _, _)                   => aggr.ty
+    case Op.Stackalloc(ty, _)                    => Type.Ptr
+    case Op.Bin(_, ty, _, _)                     => ty
+    case Op.Comp(_, _, _, _)                     => Type.Bool
+    case Op.Conv(_, ty, _)                       => ty
+    case Op.Select(_, v, _)                      => v.ty
 
     case Op.Throw(_, _)       => Type.Nothing
     case Op.Classalloc(n)     => Type.Class(n)
     case Op.Field(_, _)       => Type.Ptr
     case Op.Method(_, _)      => Type.Ptr
-    case Op.Module(n, _)         => Type.Module(n)
+    case Op.Module(n, _)      => Type.Module(n)
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
     case Op.Copy(v)           => v.ty
@@ -39,7 +39,8 @@ object Op {
   }
 
   // low-level
-  final case class Call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next) extends Unwind
+  final case class Call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)
+      extends Unwind
   final case class Load(ty: Type, ptr: Val)                    extends Op
   final case class Store(ty: Type, ptr: Val, value: Val)       extends Op
   final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Pure

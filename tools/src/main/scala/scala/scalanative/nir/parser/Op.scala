@@ -16,8 +16,8 @@ object Op extends Base[nir.Op] {
     P(
       "call[" ~ Type.parser ~ "]" ~ Val.parser ~ "(" ~ Val.parser.rep(
         sep = ",") ~ ")" ~ unwind).map {
-        case (ty, f, args, unwind) => nir.Op.Call(ty, f, args, unwind)
-      }
+      case (ty, f, args, unwind) => nir.Op.Call(ty, f, args, unwind)
+    }
   val Load =
     P("load[" ~ Type.parser ~ "]" ~ Val.parser map {
       case (ty, ptr) => nir.Op.Load(ty, ptr)

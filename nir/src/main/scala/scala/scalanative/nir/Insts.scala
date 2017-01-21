@@ -3,14 +3,14 @@ package nir
 
 sealed abstract class Inst
 object Inst {
-  final case object None extends Inst
+  final case object None                                      extends Inst
   final case class Label(name: Local, params: Seq[Val.Local]) extends Inst
-  final case class Let(name: Local, op: Op) extends Inst
+  final case class Let(name: Local, op: Op)                   extends Inst
   object Let {
     def apply(op: Op)(implicit fresh: Fresh): Let = Let(fresh(), op)
   }
 
-  sealed abstract class Cf extends Inst
+  sealed abstract class Cf                                  extends Inst
   final case object Unreachable                             extends Cf
   final case class Ret(value: Val)                          extends Cf
   final case class Jump(next: Next)                         extends Cf
