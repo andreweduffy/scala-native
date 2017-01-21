@@ -82,7 +82,13 @@ object ControlFlow {
       }.toMap
 
       blocks.foreach {
-        case node @ Block(n, _, _ :+ cf) =>
+        case node @ Block(n, _, insts :+ cf) =>
+          insts.foreach {
+            case Inst.Let(_, op: Op.Unwind) if op.unwind ne Next.None =>
+              edge(node, nodes(op.unwind.name), op.unwind)
+            case _ =>
+              ()
+          }
           cf match {
             case Inst.Unreachable | _: Inst.Ret =>
               ()

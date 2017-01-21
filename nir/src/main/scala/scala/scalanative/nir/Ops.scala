@@ -34,9 +34,12 @@ sealed abstract class Op {
 }
 object Op {
   sealed abstract class Pure extends Op
+  sealed abstract class Unwind extends Op {
+    def unwind: Next
+  }
 
   // low-level
-  final case class Call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next) extends Op
+  final case class Call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next) extends Unwind
   final case class Load(ty: Type, ptr: Val)                    extends Op
   final case class Store(ty: Type, ptr: Val, value: Val)       extends Op
   final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Pure
@@ -50,11 +53,11 @@ object Op {
   final case class Select(cond: Val, thenv: Val, elsev: Val)      extends Pure
 
   // high-level
-  final case class Throw(value: Val, unwind: Next)                 extends Op
+  final case class Throw(value: Val, unwind: Next)                 extends Unwind
   final case class Classalloc(name: Global)                        extends Op
   final case class Field(obj: Val, name: Global)                   extends Op
   final case class Method(obj: Val, name: Global)                  extends Op
-  final case class Module(name: Global, unwind: Next)              extends Op
+  final case class Module(name: Global, unwind: Next)              extends Unwind
   final case class As(ty: Type, obj: Val)                          extends Op
   final case class Is(ty: Type, obj: Val)                          extends Op
   final case class Copy(value: Val)                                extends Op
@@ -62,5 +65,4 @@ object Op {
   final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
   final case class Box(ty: Type, obj: Val)                         extends Op
   final case class Unbox(ty: Type, obj: Val)                       extends Op
-
 }
